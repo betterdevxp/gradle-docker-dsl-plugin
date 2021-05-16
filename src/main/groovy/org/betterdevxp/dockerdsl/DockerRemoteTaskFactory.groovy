@@ -83,6 +83,9 @@ class DockerRemoteTaskFactory {
             if (config.args != null) {
                 cmd.set(config.args)
             }
+            if (config.portBindings != null) {
+                hostConfig.portBindings.set(config.portBindings)
+            }
 
             onlyIf {
                 apiUtils.isContainerCreated(dockerClient, config.name) == false

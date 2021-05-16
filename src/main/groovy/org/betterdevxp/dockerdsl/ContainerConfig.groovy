@@ -6,8 +6,13 @@ class ContainerConfig {
     String displayName
     String imageName
     Integer stopWaitTime
-    Iterable<String> args
+    List<String> args
+    List<String> portBindings = []
     private List<String> options = []
+
+    Iterable<String> getPortBindings() {
+        portBindings
+    }
 
     void name(String name) {
         this.name = name
@@ -37,8 +42,12 @@ class ContainerConfig {
         text.replaceAll("(_|-)([A-Za-z0-9])", { Object[] it -> it[2].toUpperCase() })
     }
 
-    void publish(String publishedPort) {
-        option("--publish=${publishedPort}")
+    void portBinding(String portBinding) {
+        portBindings << portBinding
+    }
+
+    void portBinding(int hostPort, int containerPort) {
+        portBinding("${hostPort}:${containerPort}")
     }
 
     void env(String env) {

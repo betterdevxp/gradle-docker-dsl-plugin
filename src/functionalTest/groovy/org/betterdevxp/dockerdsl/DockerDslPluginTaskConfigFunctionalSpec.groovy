@@ -60,4 +60,45 @@ stopTest.doLast {
         notThrown(Exception)
     }
 
+    def "should apply port configuration"() {
+        given:
+        initTestContainer('''
+import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
+
+dockerdsl {
+    container {
+        name "test"
+        imageName "alpine:latest"
+        args "sleep", "10"
+        stopWaitTime 1
+        portBinding "9123:9124"
+        portBinding 9125, 9126
+    }
+}
+
+createTest.exposePorts('tcp', [9124, 9126])
+
+task inspectTest(type: DockerInspectContainer) {
+    dependsOn startTest
+    finalizedBy stopTest
+
+    targetContainerId startTest.getContainerId()
+
+    onNext { container ->
+        container.networkSettings.ports.bindings.forEach { exposedPort, bindings ->
+            logger.quiet "PortBinding: $exposedPort.port -> ${bindings.first().hostPortSpec}"
+        }
+    }
+}
+''')
+
+        when:
+        BuildResult result = run("inspectTest")
+        println result.output
+
+        then:
+        assert result.output.contains("PortBinding: 9124 -> 9123")
+        assert result.output.contains("PortBinding: 9126 -> 9125")
+    }
+
 }

@@ -80,11 +80,14 @@ class DockerRemoteTaskFactory {
         project.tasks.create(taskName, DockerCreateContainer) {
             imageId.set(config.imageName)
             containerName.set(config.name)
-            if (config.args != null) {
+            if (config.args.isEmpty() == false) {
                 cmd.set(config.args)
             }
-            if (config.portBindings != null) {
+            if (config.portBindings.isEmpty() == false) {
                 hostConfig.portBindings.set(config.portBindings)
+            }
+            if (config.env.isEmpty() == false) {
+                envVars.set(config.env)
             }
 
             onlyIf {

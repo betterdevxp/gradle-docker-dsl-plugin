@@ -1,14 +1,16 @@
 package org.betterdevxp.dockerdsl
 
+import org.gradle.api.GradleException
+
 class ContainerConfig {
 
     String name
     String displayName
     String imageName
     Integer stopWaitTime
-    List<String> args
+    List<String> args = []
     List<String> portBindings = []
-    private List<String> options = []
+    Map<String, String> env = [:]
 
     Iterable<String> getPortBindings() {
         portBindings
@@ -50,12 +52,24 @@ class ContainerConfig {
         portBinding("${hostPort}:${containerPort}")
     }
 
-    void env(String env) {
-        option("--env=${env}")
+    void portBindings(String ... portBindingArray) {
+        portBindings.addAll(portBindingArray)
     }
 
-    void option(String option) {
-        options.add(option)
+    void envVar(String keyAndValue) {
+        String[] keyAndValueArray = keyAndValue.split(/\s*=\s*/)
+        if (keyAndValueArray.length != 2) {
+            throw new GradleException("Expecting input of form 'key=value', was '${keyAndValue}'")
+        }
+        env[keyAndValueArray[0]] = keyAndValueArray[1]
+    }
+
+    void envVar(String name, String value) {
+        env[name] = value
+    }
+
+    void envVars(Map<String, String> envToAdd) {
+        env.putAll(envToAdd)
     }
 
 }

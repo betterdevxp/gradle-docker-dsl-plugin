@@ -71,6 +71,7 @@ dockerdsl {
         imageName "alpine:latest"
         args "sleep", "10"
         stopWaitTime 1
+
         portBinding "9123:9124"
         portBinding 9125, 9126
     }
@@ -94,11 +95,47 @@ task inspectTest(type: DockerInspectContainer) {
 
         when:
         BuildResult result = run("inspectTest")
-        println result.output
 
         then:
         assert result.output.contains("PortBinding: 9124 -> 9123")
         assert result.output.contains("PortBinding: 9126 -> 9125")
+    }
+
+    def "should apply environment configuration"() {
+        given:
+        initTestContainer('''
+import com.bmuschko.gradle.docker.tasks.container.DockerLogsContainer
+
+dockerdsl {
+    container {
+        name "test"
+        imageName "alpine:latest"
+        args "env"
+
+        envVar "KEY1 = value1"
+        envVar "KEY2", "value2"
+        envVars (["KEY3": "value3", "KEY4": "value4"])
+    }
+}
+
+task logTest(type: DockerLogsContainer) {
+    dependsOn startTest
+    finalizedBy stopTest
+
+    targetContainerId startTest.getContainerId()
+    follow = true
+    tailAll = true
+}
+''')
+
+        when:
+        BuildResult result = run("logTest")
+
+        then:
+        assert result.output.contains("KEY1=value1")
+        assert result.output.contains("KEY2=value2")
+        assert result.output.contains("KEY3=value3")
+        assert result.output.contains("KEY4=value4")
     }
 
 }

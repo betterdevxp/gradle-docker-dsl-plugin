@@ -7,7 +7,7 @@ class DockerDslPluginTaskCoreFunctionalSpec extends Specification implements Doc
 
     def setup() {
         initTestContainer()
-        runner.withArguments("destroyTest").build()
+        run("destroyTest")
     }
 
     def "pull should pull the image and skip if image already pulled"() {

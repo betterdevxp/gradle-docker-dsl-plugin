@@ -22,10 +22,16 @@ trait GradleRunnerSupport {
     }
 
     BuildResult run(String... args) {
+        if ((args as List).contains("-s") == false) {
+            args = args + "-s"
+        }
         runner.withArguments(args).build()
     }
 
     BuildResult runAndFail(String ... args) {
+        if ((args as List).contains("-s") == false) {
+            args = args + "-s"
+        }
         runner.withArguments(args).buildAndFail()
     }
 

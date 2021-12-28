@@ -16,7 +16,7 @@ class DockerDslExtension {
     void container(Closure closure) {
         ContainerConfig container = new ContainerConfig()
         ConfigureUtil.configure(closure, container)
-        new DockerRemoteTaskFactory(project, container).createTasksAndInitializeDependencies()
+        new DockerRemoteTaskFactory(project, container).registerTasksAndConfigureDependencies()
     }
 
 }

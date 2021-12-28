@@ -6,7 +6,6 @@ import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerStopContainer
 import com.bmuschko.gradle.docker.tasks.image.DockerPullImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
-import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskProvider
@@ -32,21 +31,21 @@ class DockerRemoteTaskFactory {
         this.apiUtils = new DockerApiUtils()
     }
 
-    void createTasksAndInitializeDependencies() {
-        createTasks()
-        initializeDependencies()
+    void registerTasksAndConfigureDependencies() {
+        registerTasks()
+        configureDependencies()
     }
 
-    private void createTasks() {
-        pullImageTaskProvider = createPullImageTask()
-        destroyImageTaskProvider = createDestroyImageTask()
-        createContainerTaskProvider = createCreateContainerTask()
-        startContainerTaskProvider = createStartContainerTask()
-        stopContainerTaskProvider = createStopContainerTask()
-        removeContainerTaskProvider = createRemoveContainerTask()
+    private void registerTasks() {
+        registerPullImageTask()
+        registerDestroyImageTask()
+        registerCreateContainerTask()
+        registerStartContainerTask()
+        registerStopContainerTask()
+        registerRemoveContainerTask()
     }
 
-    private void initializeDependencies() {
+    private void configureDependencies() {
         createContainerTaskProvider.configure {
             dependsOn(pullImageTaskProvider)
         }
@@ -62,23 +61,26 @@ class DockerRemoteTaskFactory {
         }
     }
 
-    private String getTaskName(String taskType) {
-        "${taskType}${config.displayName.capitalize()}"
+    private <T extends Task> TaskProvider<T> registerImageTask(String action, Class<T> type) {
+        registerDockerTask(action, "image", type)
     }
 
-    private String getImageDescription(String action) {
-        "${action.capitalize()} the ${config.displayName} image"
+    private <T extends Task> TaskProvider<T> registerContainerTask(String action, Class<T> type) {
+        registerDockerTask(action, "container", type)
     }
 
-    private String getContainerDescription(String action) {
-        "${action.capitalize()} the ${config.displayName} container"
-    }
-
-    private TaskProvider<DockerPullImage> createPullImageTask() {
-        String taskName = getTaskName("pull")
-        project.tasks.register(taskName, DockerPullImage) {
+    private <T extends Task> TaskProvider<T> registerDockerTask(String action, String containerOrImage, Class<T> type) {
+        String taskName = "${action}${config.displayName.capitalize()}"
+        TaskProvider<T> taskProvider = project.tasks.register(taskName, type) {
             group = LIFECYCLE_GROUP
-            description = getImageDescription("pull")
+            description = "${action.capitalize()} the ${config.displayName} ${containerOrImage}"
+        }
+        taskProvider
+    }
+
+    private void registerPullImageTask() {
+        pullImageTaskProvider = registerImageTask("pull", DockerPullImage)
+        pullImageTaskProvider.configure {
             image.set(config.imageName)
 
             onlyIf {
@@ -87,11 +89,9 @@ class DockerRemoteTaskFactory {
         }
     }
 
-    private TaskProvider<DockerRemoveImage> createDestroyImageTask() {
-        String taskName = getTaskName("destroy")
-        project.tasks.register(taskName, DockerRemoveImage) {
-            group = LIFECYCLE_GROUP
-            description = getImageDescription("destroy")
+    private void registerDestroyImageTask() {
+        destroyImageTaskProvider = registerImageTask("destroy", DockerRemoveImage)
+        destroyImageTaskProvider.configure {
             imageId.set(config.imageName)
 
             onlyIf {
@@ -100,11 +100,9 @@ class DockerRemoteTaskFactory {
         }
     }
 
-    private TaskProvider<DockerCreateContainer> createCreateContainerTask() {
-        String taskName = getTaskName("create")
-        project.tasks.register(taskName, DockerCreateContainer) {
-            group = LIFECYCLE_GROUP
-            description = getContainerDescription("create")
+    private void registerCreateContainerTask() {
+        createContainerTaskProvider = registerContainerTask("create", DockerCreateContainer)
+        createContainerTaskProvider.configure {
             imageId.set(config.imageName)
             containerName.set(config.name)
             if (config.args.isEmpty() == false) {
@@ -123,11 +121,9 @@ class DockerRemoteTaskFactory {
         }
     }
 
-    private TaskProvider<DockerStartContainer> createStartContainerTask() {
-        String taskName = getTaskName("start")
-        project.tasks.register(taskName, DockerStartContainer) {
-            group = LIFECYCLE_GROUP
-            description = getContainerDescription("start")
+    private void registerStartContainerTask() {
+        startContainerTaskProvider = registerContainerTask("start", DockerStartContainer)
+        startContainerTaskProvider.configure {
             containerId.set(config.name)
 
             onlyIf {
@@ -136,11 +132,9 @@ class DockerRemoteTaskFactory {
         }
     }
 
-    private TaskProvider<DockerStopContainer> createStopContainerTask() {
-        String taskName = getTaskName("stop")
-        project.tasks.register(taskName, DockerStopContainer) {
-            group = LIFECYCLE_GROUP
-            description = getContainerDescription("stop")
+    private void registerStopContainerTask() {
+        stopContainerTaskProvider = registerContainerTask("stop", DockerStopContainer)
+        stopContainerTaskProvider.configure {
             containerId.set(config.name)
             waitTime.set(config.stopWaitTime)
 
@@ -150,11 +144,9 @@ class DockerRemoteTaskFactory {
         }
     }
 
-    private TaskProvider<DockerRemoveContainer> createRemoveContainerTask() {
-        String taskName = getTaskName("remove")
-        project.tasks.register(taskName, DockerRemoveContainer) {
-            group = LIFECYCLE_GROUP
-            description = getContainerDescription("remove")
+    private void registerRemoveContainerTask() {
+        removeContainerTaskProvider = registerContainerTask("remove", DockerRemoveContainer)
+        removeContainerTaskProvider.configure {
             containerId.set(config.name)
 
             onlyIf {

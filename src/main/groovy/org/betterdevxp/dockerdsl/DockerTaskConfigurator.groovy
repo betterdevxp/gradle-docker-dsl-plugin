@@ -10,7 +10,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskProvider
 
-class DockerRemoteTaskFactory {
+class DockerTaskConfigurator {
 
     static final String LIFECYCLE_GROUP = "Docker Container Lifecycle"
 
@@ -25,7 +25,7 @@ class DockerRemoteTaskFactory {
     private TaskProvider<DockerStopContainer> stopContainerTaskProvider
     private TaskProvider<DockerRemoveContainer> removeContainerTaskProvider
 
-    DockerRemoteTaskFactory(Project project, ContainerConfig config) {
+    DockerTaskConfigurator(Project project, ContainerConfig config) {
         this.project = project
         this.config = config
         this.apiUtils = new DockerApiUtils()

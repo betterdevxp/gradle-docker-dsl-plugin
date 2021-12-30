@@ -21,18 +21,19 @@ trait GradleRunnerSupport {
                 .withProjectDir(projectDir)
     }
 
-    BuildResult run(String... args) {
+    private GradleRunner runnerWithArgumentsIncludingStackTrace(String... args) {
         if ((args as List).contains("-s") == false) {
             args = args + "-s"
         }
-        runner.withArguments(args).build()
+        runner.withArguments(args)
+    }
+
+    BuildResult run(String... args) {
+        runnerWithArgumentsIncludingStackTrace(args).build()
     }
 
     BuildResult runAndFail(String ... args) {
-        if ((args as List).contains("-s") == false) {
-            args = args + "-s"
-        }
-        runner.withArguments(args).buildAndFail()
+        runnerWithArgumentsIncludingStackTrace(args).buildAndFail()
     }
 
 }

@@ -7,6 +7,7 @@ class DockerDslExtension {
     static final String NAME = "dockerdsl"
 
     private Project project
+    private DockerTaskConfigurator configurator = new DockerTaskConfigurator()
 
     DockerDslExtension(Project project) {
         this.project = project
@@ -15,7 +16,7 @@ class DockerDslExtension {
     void container(Closure closure) {
         ContainerConfig container = new ContainerConfig()
         project.configure(container, closure)
-        new DockerTaskConfigurator(project, container).registerTasksAndConfigureDependencies()
+        configurator.registerTasksAndConfigureDependencies(project, container)
     }
 
 }

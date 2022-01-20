@@ -12,157 +12,57 @@ import org.gradle.api.tasks.TaskProvider
 
 class DockerTaskConfigurator {
 
-    static final String LIFECYCLE_GROUP = "Docker Container Lifecycle"
-
-    private Project project
-    private ContainerConfig config
-
-    private TaskProvider<DockerPullImage> pullImageTaskProvider
-    private TaskProvider<DockerRemoveImage> destroyImageTaskProvider
-    private TaskProvider<DockerCreateContainer> createContainerTaskProvider
-    private TaskProvider<DockerStartContainer> startContainerTaskProvider
-    private TaskProvider<DockerStopContainer> stopContainerTaskProvider
-    private TaskProvider<DockerRemoveContainer> removeContainerTaskProvider
-    private TaskProvider<Task> refreshContainerTaskProvider
-
-    DockerTaskConfigurator(Project project, ContainerConfig config) {
-        this.project = project
-        this.config = config
+    void registerTasksAndConfigureDependencies(Project project, ContainerConfig config) {
+        DockerLifecycleTaskProviderSet taskProviders = registerTasks(project, config)
+        configureDependencies(taskProviders)
     }
 
-    void registerTasksAndConfigureDependencies() {
-        registerTasks()
-        configureDependencies()
+    private DockerLifecycleTaskProviderSet registerTasks(Project project, ContainerConfig config) {
+        DockerLifecycleTaskFactory factory = new DockerLifecycleTaskFactory(project, config)
+        DockerLifecycleTaskProviderSet taskProviders = new DockerLifecycleTaskProviderSet()
+        taskProviders.pullImage = factory.registerPullImageTask()
+        taskProviders.destroyImage = factory.registerDestroyImageTask()
+        taskProviders.createContainer = factory.registerCreateContainerTask()
+        taskProviders.startContainer = factory.registerStartContainerTask()
+        taskProviders.stopContainer = factory.registerStopContainerTask()
+        taskProviders.removeContainer = factory.registerRemoveContainerTask()
+        taskProviders.refreshContainer = factory.registerContainerTask("refresh", Task)
+        taskProviders
     }
 
-    private void registerTasks() {
-        registerPullImageTask()
-        registerDestroyImageTask()
-        registerCreateContainerTask()
-        registerStartContainerTask()
-        registerStopContainerTask()
-        registerRemoveContainerTask()
-        registerRefreshContainerTask()
-    }
-
-    private void configureDependencies() {
-        createContainerTaskProvider.configure {
-            dependsOn(pullImageTaskProvider)
-            mustRunAfter(removeContainerTaskProvider)
+    private void configureDependencies(DockerLifecycleTaskProviderSet taskProviders) {
+        taskProviders.createContainer.configure {
+            dependsOn(taskProviders.pullImage)
+            mustRunAfter(taskProviders.removeContainer)
         }
-        startContainerTaskProvider.configure {
-            dependsOn(createContainerTaskProvider)
-            mustRunAfter(stopContainerTaskProvider)
-            mustRunAfter(removeContainerTaskProvider)
+        taskProviders.startContainer.configure {
+            dependsOn(taskProviders.createContainer)
+            mustRunAfter(taskProviders.stopContainer)
+            mustRunAfter(taskProviders.removeContainer)
         }
-        removeContainerTaskProvider.configure {
-            dependsOn(stopContainerTaskProvider)
+        taskProviders.removeContainer.configure {
+            dependsOn(taskProviders.stopContainer)
         }
-        destroyImageTaskProvider.configure {
-            dependsOn(removeContainerTaskProvider)
+        taskProviders.destroyImage.configure {
+            dependsOn(taskProviders.removeContainer)
         }
-        refreshContainerTaskProvider.configure {
-            dependsOn(removeContainerTaskProvider)
-            dependsOn(startContainerTaskProvider)
+        taskProviders.refreshContainer.configure {
+            dependsOn(taskProviders.removeContainer)
+            dependsOn(taskProviders.startContainer)
         }
     }
 
-    private <T extends Task> TaskProvider<T> registerImageTask(String action, Class<T> type) {
-        registerDockerTask(action, "image", type)
-    }
 
-    private <T extends Task> TaskProvider<T> registerContainerTask(String action, Class<T> type) {
-        registerDockerTask(action, "container", type)
-    }
+    private static class DockerLifecycleTaskProviderSet {
 
-    private <T extends Task> TaskProvider<T> registerDockerTask(String action, String containerOrImage, Class<T> type) {
-        String taskName = "${action}${config.displayName.capitalize()}"
-        TaskProvider<T> taskProvider = project.tasks.register(taskName, type) {
-            group = LIFECYCLE_GROUP
-            description = "${action.capitalize()} the ${config.displayName} ${containerOrImage}"
-        }
-        taskProvider
-    }
+        TaskProvider<DockerPullImage> pullImage
+        TaskProvider<DockerRemoveImage> destroyImage
+        TaskProvider<DockerCreateContainer> createContainer
+        TaskProvider<DockerStartContainer> startContainer
+        TaskProvider<DockerStopContainer> stopContainer
+        TaskProvider<DockerRemoveContainer> removeContainer
+        TaskProvider<Task> refreshContainer
 
-    private void registerPullImageTask() {
-        pullImageTaskProvider = registerImageTask("pull", DockerPullImage)
-        pullImageTaskProvider.configure {
-            image.set(config.imageName)
-
-            onlyIf {
-                DockerApiUtils.isImageLocal(dockerClient, config.imageName) == false
-            }
-        }
-    }
-
-    private void registerDestroyImageTask() {
-        destroyImageTaskProvider = registerImageTask("destroy", DockerRemoveImage)
-        destroyImageTaskProvider.configure {
-            imageId.set(config.imageName)
-
-            onlyIf {
-                DockerApiUtils.isImageLocal(dockerClient, config.imageName)
-            }
-        }
-    }
-
-    private void registerCreateContainerTask() {
-        createContainerTaskProvider = registerContainerTask("create", DockerCreateContainer)
-        createContainerTaskProvider.configure {
-            imageId.set(config.imageName)
-            containerName.set(config.name)
-            if (config.args.isEmpty() == false) {
-                cmd.set(config.args)
-            }
-            if (config.portBindings.isEmpty() == false) {
-                hostConfig.portBindings.set(config.portBindings)
-            }
-            if (config.env.isEmpty() == false) {
-                envVars.set(config.env)
-            }
-
-            onlyIf {
-                DockerApiUtils.isContainerCreated(dockerClient, config.name) == false
-            }
-        }
-    }
-
-    private void registerStartContainerTask() {
-        startContainerTaskProvider = registerContainerTask("start", DockerStartContainer)
-        startContainerTaskProvider.configure {
-            containerId.set(config.name)
-
-            onlyIf {
-                DockerApiUtils.isContainerRunning(dockerClient, config.name) == false
-            }
-        }
-    }
-
-    private void registerStopContainerTask() {
-        stopContainerTaskProvider = registerContainerTask("stop", DockerStopContainer)
-        stopContainerTaskProvider.configure {
-            containerId.set(config.name)
-            waitTime.set(config.stopWaitTime)
-
-            onlyIf {
-                DockerApiUtils.isContainerRunning(dockerClient, config.name)
-            }
-        }
-    }
-
-    private void registerRemoveContainerTask() {
-        removeContainerTaskProvider = registerContainerTask("remove", DockerRemoveContainer)
-        removeContainerTaskProvider.configure {
-            containerId.set(config.name)
-
-            onlyIf {
-                DockerApiUtils.isContainerCreated(dockerClient, config.name)
-            }
-        }
-    }
-
-    private void registerRefreshContainerTask() {
-        refreshContainerTaskProvider = registerContainerTask("refresh", Task)
     }
 
 }

@@ -2,6 +2,7 @@ package org.betterdevxp.gradle.testkit
 
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.UnknownTaskException
 import org.gradle.api.internal.tasks.DefaultTaskDependency
 
 class ProjectValidator {
@@ -12,8 +13,9 @@ class ProjectValidator {
         this.project = project
     }
 
-    void assertPluginApplied(String pluginName) {
+    boolean assertPluginApplied(String pluginName) {
         assert project.plugins.getPlugin(pluginName) != null
+        true
     }
 
     List<String> getDependencyNamesForTask(String taskName) {
@@ -21,42 +23,57 @@ class ProjectValidator {
         task.taskDependencies.getDependencies(task).toList().collect { it.name }
     }
 
-    void assertTaskDependency(String taskName, String... expectedDependencyNames) {
+    boolean assertTaskDependency(String taskName, String... expectedDependencyNames) {
         expectedDependencyNames.each { String expectedDependencyName ->
             assertTaskDependency(taskName, expectedDependencyName)
         }
+        true
     }
 
-    void assertTaskDependency(String taskName, String expectedDependencyName) {
+    boolean assertTaskDependency(String taskName, String expectedDependencyName) {
         List<String> dependencyNames = getDependencyNamesForTask(taskName)
         assert dependencyNames.contains(expectedDependencyName)
         "Expected task ${taskName} to declare dependency on ${expectedDependencyName}, actual dependencies: ${dependencyNames}"
+        true
     }
 
-    void assertNoTaskDependency(String taskName, String expectedMissingDependencyName) {
+    boolean assertNoTaskDependency(String taskName, String expectedMissingDependencyName) {
         List<String> dependencyNames = getDependencyNamesForTask(taskName)
         assert !dependencyNames.contains(expectedMissingDependencyName)
         "Expected task ${taskName} to NOT declare dependency on ${expectedMissingDependencyName}, actual dependencies: ${dependencyNames}"
+        true
     }
 
-    void assertTasksDefined(String... names) {
+    boolean assertTasksDefined(String... names) {
         names.each { String name ->
-            assert project.tasks.findByName(name)
+            try {
+                project.tasks.named(name)
+            } catch (UnknownTaskException ex) {
+                assert false: "No task defined named ${name}"
+            }
         }
+        true
     }
 
-    void assertTasksNotDefined(String... names) {
+    boolean assertTasksNotDefined(String... names) {
         names.each { String name ->
-            assert !project.tasks.findByName(name)
+            try {
+                project.tasks.named(name)
+                assert false: "Task defined named ${name}"
+            } catch (UnknownTaskException ex) {
+            }
         }
+        true
     }
 
-    void assertTaskMustRunAfter(String taskName, String expectedMustRunAfterName) {
+    boolean assertTaskMustRunAfter(String taskName, String expectedMustRunAfterName) {
         assert getMustRunAfterTaskNames(taskName).contains(expectedMustRunAfterName)
+        true
     }
 
-    void assertTaskMustRunAfterNotDefined(String taskName, String expectedMustRunAfterName) {
+    boolean assertTaskMustRunAfterNotDefined(String taskName, String expectedMustRunAfterName) {
         assert getMustRunAfterTaskNames(taskName).contains(expectedMustRunAfterName) == false
+        true
     }
 
     private List<String> getMustRunAfterTaskNames(String taskName) {

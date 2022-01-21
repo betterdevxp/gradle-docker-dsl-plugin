@@ -12,35 +12,42 @@ import org.gradle.api.tasks.TaskProvider
 
 class DockerTaskConfigurator {
 
-    private DockerLifecycleTaskProviderSet initialTaskProviders
     private DockerBatchLifecycleTaskProviderSet batchTaskProviders
+    private Map<String, DockerLifecycleTaskProviderSet> imageNameToLifecycleTaskProviderSet = [:]
 
     void registerTasksAndConfigureDependencies(Project project, ContainerConfig config) {
         DockerLifecycleTaskProviderSet taskProviders = registerTasks(project, config)
-        taskProviders.configureDependencies(taskProviders)
+        taskProviders.configureDependencies()
         configureBulkDependencies(project, taskProviders)
+        imageNameToLifecycleTaskProviderSet[config.imageName] = taskProviders
     }
 
     private DockerLifecycleTaskProviderSet registerTasks(Project project, ContainerConfig config) {
         DockerLifecycleTaskFactory factory = new DockerLifecycleTaskFactory(project, config)
         DockerLifecycleTaskProviderSet taskProviders = new DockerLifecycleTaskProviderSet()
-        taskProviders.pullImage = factory.registerPullImageTask()
-        taskProviders.destroyImage = factory.registerDestroyImageTask()
         taskProviders.createContainer = factory.registerCreateContainerTask()
         taskProviders.startContainer = factory.registerStartContainerTask()
         taskProviders.stopContainer = factory.registerStopContainerTask()
         taskProviders.removeContainer = factory.registerRemoveContainerTask()
         taskProviders.refreshContainer = factory.registerContainerTask("refresh", Task)
+
+        DockerLifecycleTaskProviderSet imageTaskProviders = imageNameToLifecycleTaskProviderSet[config.imageName]
+        if (imageTaskProviders == null) {
+            taskProviders.pullImage = factory.registerPullImageTask()
+            taskProviders.destroyImage = factory.registerDestroyImageTask()
+        } else {
+            taskProviders.pullImage = imageTaskProviders.pullImage
+            taskProviders.destroyImage = imageTaskProviders.destroyImage
+        }
         taskProviders
     }
 
     private void configureBulkDependencies(Project project, DockerLifecycleTaskProviderSet dockerLifecycleTaskProviderSet) {
-        if (initialTaskProviders == null) {
-            initialTaskProviders = dockerLifecycleTaskProviderSet
-        } else {
+        if (imageNameToLifecycleTaskProviderSet.size() > 0) {
             if (batchTaskProviders == null) {
                 batchTaskProviders = registerBatchTasks(project)
-                batchTaskProviders.addDependenciesToBatchTasks(initialTaskProviders)
+                DockerLifecycleTaskProviderSet initialTaskProviderSet = imageNameToLifecycleTaskProviderSet.values()[0]
+                batchTaskProviders.addDependenciesToBatchTasks(initialTaskProviderSet)
             }
             batchTaskProviders.addDependenciesToBatchTasks(dockerLifecycleTaskProviderSet)
         }

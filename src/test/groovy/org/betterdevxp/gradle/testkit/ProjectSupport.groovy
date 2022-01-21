@@ -25,6 +25,9 @@ trait ProjectSupport {
 	}
 
 	Project createProject() {
+		if (buildFile.exists() == false) {
+			buildFile.text = ""
+		}
 		ProjectBuilder.builder()
 				.withName("${projectName}-project")
 				.withProjectDir(projectDir)

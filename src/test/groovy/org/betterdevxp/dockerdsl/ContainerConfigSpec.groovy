@@ -32,4 +32,21 @@ class ContainerConfigSpec extends Specification {
         "theContainerName"   | "theContainerName"
     }
 
+    def "getImageDisplayName should strip special chars and convert image name to camel"() {
+        given:
+        config.imageName = imageName
+
+        expect:
+        assert config.imageDisplayName == expectedDisplayName
+
+        where:
+        imageName                  | expectedDisplayName
+        "image"                    | "image"
+        "the-image-name"           | "theImageName"
+        "the_image_name"           | "theImageName"
+        "the-image:name"           | "theImageName"
+        "the-image:10.1-alpine3.5" | "theImage101Alpine35"
+        "theImageName"             | "theImageName"
+    }
+
 }

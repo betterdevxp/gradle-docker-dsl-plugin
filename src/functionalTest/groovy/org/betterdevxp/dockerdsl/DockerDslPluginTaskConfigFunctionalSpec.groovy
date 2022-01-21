@@ -7,7 +7,7 @@ class DockerDslPluginTaskConfigFunctionalSpec extends Specification implements D
 
     def setup() {
         initTestContainer()
-        runner.withArguments("removeTest", "pullTest").build()
+        runner.withArguments("removeTest", "pullAlpineLatest").build()
     }
 
     def "create should apply args to created container"() {
@@ -151,8 +151,8 @@ dockerdsl {
         BuildResult result = run("task")
         
         then:
-        assert result.output.contains("pullTest - Pull the test image")
-        assert result.output.contains("destroyTest - Destroy the test image")
+        assert result.output.contains("pullAlpineLatest - Pull the alpine:latest image")
+        assert result.output.contains("destroyAlpineLatest - Destroy the alpine:latest image")
         assert result.output.contains("createTest - Create the test container")
         assert result.output.contains("startTest - Start the test container")
         assert result.output.contains("stopTest - Stop the test container")

@@ -40,8 +40,12 @@ class ContainerConfig {
         displayName ?: toCamelCase(name)
     }
 
+    String getImageDisplayName() {
+        toCamelCase(imageName)
+    }
+
     private String toCamelCase(String text) {
-        text.replaceAll("(_|-)([A-Za-z0-9])", { Object[] it -> it[2].toUpperCase() })
+        text.replaceAll("(\\W|_)([A-Za-z0-9])", { Object[] it -> it[2].toUpperCase() })
     }
 
     void portBinding(String portBinding) {

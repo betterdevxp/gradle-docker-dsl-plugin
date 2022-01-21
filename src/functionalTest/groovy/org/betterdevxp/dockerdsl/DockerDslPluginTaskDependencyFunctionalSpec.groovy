@@ -7,7 +7,7 @@ class DockerDslPluginTaskDependencyFunctionalSpec extends Specification implemen
 
     def setup() {
         initTestContainer()
-        run("destroyTest")
+        run("destroyAlpineLatest")
     }
 
     def "destroy should stop and remove running container"() {
@@ -15,7 +15,7 @@ class DockerDslPluginTaskDependencyFunctionalSpec extends Specification implemen
         run("startTest")
 
         when:
-        BuildResult result = run("destroyTest")
+        BuildResult result = run("destroyAlpineLatest")
 
         then:
         assert result.output.contains("Stopping container with ID 'test'")
@@ -57,7 +57,7 @@ class DockerDslPluginTaskDependencyFunctionalSpec extends Specification implemen
     def "refresh should remove and start container"() {
         given:
         run("startTest")
-        
+
         when:
         BuildResult result = run("refreshTest")
 
@@ -66,6 +66,31 @@ class DockerDslPluginTaskDependencyFunctionalSpec extends Specification implemen
         assert result.output.contains("Removing container with ID 'test'")
         assert result.output.contains("Created container with ID 'test'")
         assert result.output.contains("Starting container with ID 'test'")
+    }
+
+    def "should handle multiple containers using the same image"() {
+        given:
+        initTestContainer("""
+dockerdsl {
+    container {
+        name "testOne"
+        imageName "alpine:latest"
+    }
+    container {
+        name "testTwo"
+        imageName "alpine:latest"
+    }
+}
+""")
+        run("startAllContainers")
+
+        when:
+        BuildResult result = run("destroyAlpineLatest")
+
+        then:
+        assert result.output.contains("Removing container with ID 'testOne'")
+        assert result.output.contains("Removing container with ID 'testTwo'")
+        assert result.output.findAll("Removing image with ID 'alpine:latest'").size() == 1
     }
 
 }

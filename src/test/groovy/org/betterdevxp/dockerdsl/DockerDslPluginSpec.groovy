@@ -1,32 +1,32 @@
 package org.betterdevxp.dockerdsl
 
-import org.gradle.api.Project
-import org.gradle.testfixtures.ProjectBuilder
+import org.betterdevxp.gradle.testkit.ProjectSupport
 import spock.lang.Specification
 
-class DockerDslPluginSpec extends Specification {
+class DockerDslPluginSpec extends Specification implements ProjectSupport {
 
     def "should create container lifecycle tasks"() {
         given:
-        Project project = ProjectBuilder.builder().build()
+        project.buildFile.text = """
+dockerdsl {
+    container {
+        name "postgres"
+        imageName "postgres:latest"
+        portBinding "5432:5432"
+        envVar "POSTGRES_USER=postgres"
+        envVar "POSTGRES_PASSWORD=postgres"
+    }
+}
+"""
+
+        and:
+        project.pluginManager.apply(DockerDslPlugin)
 
         when:
-        project.pluginManager.apply(DockerDslPlugin)
-        project.extensions.findByType(DockerDslExtension).container {
-            name "postgres"
-            imageName "postgres:latest"
-            portBinding "5432:5432"
-            envVar "POSTGRES_USER=postgres"
-            envVar "POSTGRES_PASSWORD=postgres"
-        }
+        evaluateProject()
 
         then:
-        assert project.tasks.findByName("pullPostgres") != null
-        assert project.tasks.findByName("createPostgres") != null
-        assert project.tasks.findByName("startPostgres") != null
-        assert project.tasks.findByName("stopPostgres") != null
-        assert project.tasks.findByName("removePostgres") != null
-        assert project.tasks.findByName("destroyPostgres") != null
+        projectValidator.assertTasksDefined("pullPostgresLatest", "createPostgres", "startPostgres",
+                "stopPostgres", "removePostgres", "destroyPostgresLatest")
     }
-
 }

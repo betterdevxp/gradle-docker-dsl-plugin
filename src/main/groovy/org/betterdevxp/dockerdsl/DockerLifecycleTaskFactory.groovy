@@ -23,18 +23,20 @@ class DockerLifecycleTaskFactory {
     }
 
     def <T extends Task> TaskProvider<T> registerImageTask(String action, Class<T> type) {
-        registerDockerTask(action, "image", type)
+        String taskName = "${action}${config.imageDisplayName.capitalize()}"
+        TaskProvider<T> taskProvider = project.tasks.register(taskName, type) {
+            group = LIFECYCLE_GROUP
+            description = "${action.capitalize()} the ${config.imageName} image"
+        }
+        taskProvider
+
     }
 
     def <T extends Task> TaskProvider<T> registerContainerTask(String action, Class<T> type) {
-        registerDockerTask(action, "container", type)
-    }
-
-    private <T extends Task> TaskProvider<T> registerDockerTask(String action, String containerOrImage, Class<T> type) {
         String taskName = "${action}${config.displayName.capitalize()}"
         TaskProvider<T> taskProvider = project.tasks.register(taskName, type) {
             group = LIFECYCLE_GROUP
-            description = "${action.capitalize()} the ${config.displayName} ${containerOrImage}"
+            description = "${action.capitalize()} the ${config.displayName} container"
         }
         taskProvider
     }

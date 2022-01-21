@@ -7,43 +7,43 @@ class DockerDslPluginTaskCoreFunctionalSpec extends Specification implements Doc
 
     def setup() {
         initTestContainer()
-        run("destroyTest")
+        run("destroyAlpineLatest")
     }
 
     def "pull should pull the image and skip if image already pulled"() {
         when:
-        BuildResult result = run("pullTest")
+        BuildResult result = run("pullAlpineLatest")
 
         then:
         assert result.output.contains("Pulling image 'alpine:latest'")
 
         when:
-        result = run("pullTest")
+        result = run("pullAlpineLatest")
 
         then:
-        assert result.output.contains("Task :pullTest SKIPPED")
+        assert result.output.contains("Task :pullAlpineLatest SKIPPED")
     }
 
     def "destroy should remove the image and skip if image does not exist"() {
         given:
-        run("pullTest")
+        run("pullAlpineLatest")
 
         when:
-        BuildResult result = run("destroyTest")
+        BuildResult result = run("destroyAlpineLatest")
 
         then:
         assert result.output.contains("Removing image with ID 'alpine:latest'")
 
         when:
-        result = run("destroyTest")
+        result = run("destroyAlpineLatest")
 
         then:
-        assert result.output.contains("Task :destroyTest SKIPPED")
+        assert result.output.contains("Task :destroyAlpineLatest SKIPPED")
     }
 
     def "create should create the container and skip if container already exists"() {
         given:
-        run("pullTest")
+        run("pullAlpineLatest")
 
         when:
         BuildResult result = run("createTest")

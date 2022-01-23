@@ -17,16 +17,22 @@ dependencies {
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
 }
 
+String pluginDescription = "Gradle plugin for managing Docker containers, specifically in the context of the local and CI build/test lifecycle.  " +
+        "This plugin provides a handy DSL for the excellent https://github.com/bmuschko/gradle-docker-plugin."
+
 pluginBundle {
     website = 'https://github.com/betterdevxp/gradle-docker-dsl-plugin'
     vcsUrl = 'https://github.com/betterdevxp/gradle-docker-dsl-plugin.git'
     tags = ['gradle', 'docker', 'testing']
+    description = pluginDescription
 }
 
 gradlePlugin {
     plugins {
         dockerDsl {
-            id = 'org.betterdevxp.dockerdsl'
+            id = 'org.betterdevxp.docker-dsl'
+            displayName = "Docker DSL"
+            description = pluginDescription
             implementationClass = 'org.betterdevxp.dockerdsl.DockerDslPlugin'
         }
     }

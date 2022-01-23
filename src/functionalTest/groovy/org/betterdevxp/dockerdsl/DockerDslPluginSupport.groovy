@@ -8,7 +8,7 @@ trait DockerDslPluginSupport extends GradleRunnerSupport {
     void initTestContainer(String dsl = null) {
         buildFile.text = """
 plugins {
-    id('org.betterdevxp.dockerdsl')
+    id('org.betterdevxp.docker-dsl')
 }
 """
         if (dsl != null) {

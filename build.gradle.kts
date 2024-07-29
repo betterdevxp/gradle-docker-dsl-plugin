@@ -4,6 +4,7 @@ plugins {
     id("java-gradle-plugin")
     id("maven-publish")
     id("com.gradle.plugin-publish") version "0.16.0"
+    kotlin("jvm")
 }
 
 repositories {
@@ -12,8 +13,9 @@ repositories {
 }
 
 dependencies {
-    implementation("com.bmuschko:gradle-docker-plugin:6.7.0")
+    implementation("com.bmuschko:gradle-docker-plugin:9.4.0")
     testImplementation("org.spockframework:spock-core:2.0-groovy-3.0")
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 val pluginDescription = "Gradle plugin for managing Docker containers, specifically in the context of the local and CI build/test lifecycle. " +
@@ -60,4 +62,8 @@ tasks.named("check") {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+}
+
+kotlin {
+    jvmToolchain(11)
 }

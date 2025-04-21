@@ -26,7 +26,7 @@ dockerdsl {
         BuildResult result = runAndFail("startTest")
 
         then:
-        assert result.output.contains('unable to start container process: exec: \\"thisshouldfail\\"')
+        assert result.output.contains('error during container init: exec: \\"thisshouldfail\\"')
     }
 
     def "stopWaitTime should stop the container within the specified time"() {
